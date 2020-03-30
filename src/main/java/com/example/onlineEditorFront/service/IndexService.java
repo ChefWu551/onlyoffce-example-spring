@@ -6,5 +6,5 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public interface IndexService {
-    void process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
+    String process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
 }

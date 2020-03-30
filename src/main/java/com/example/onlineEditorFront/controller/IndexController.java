@@ -24,7 +24,7 @@ public class IndexController extends HttpServlet {
     IndexService indexService;
 
     @RequestMapping("IndexServlet")
-    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        indexService.process(request, response);
+    public String processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        return indexService.process(request, response);
     }
 }

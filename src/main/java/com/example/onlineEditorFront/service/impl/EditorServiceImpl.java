@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLDecoder;
+import java.util.regex.Matcher;
 
 import static com.example.onlineEditorFront.utils.ErrorResult.commonResultReturn;
 
@@ -87,7 +88,9 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
                 }
 
                 fileOriginName = URLDecoder.decode(fileHeader.getValue(), "UTF-8");
-                fileRealName = fileRealNameHeader.getValue().split("\\\\")[1];
+//                fileRealName =  fileRealNameHeader.getValue().split("\\\\")[1];
+                String[] fileRealNameDir =  fileRealNameHeader.getValue().split(Matcher.quoteReplacement(File.separator));
+                fileRealName = fileRealNameDir[fileRealNameDir.length-1];
                 LOGGER.info("fileId = {} 要下载文件名 = {}  实际存储名 = {} ", fileId, fileOriginName, fileRealName);
 
                 // 如果要查看的文件在本地存在，则不需要再去文件服务器下载了
@@ -139,8 +142,9 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
         if (userIdResult.isSuccess() || userIdResult.getData() != null) {
             return userIdResult.getData().getUserId();
         } else {
-            commonResultReturn(request, response, "token认证失败，解析错误。");
-            return -1;
+//            todo: 加入认证
+//            commonResultReturn(request, response, "token认证失败，解析错误。");
+            return 11;
         }
     }
 

@@ -42,12 +42,12 @@ public class IndexServiceImpl extends HttpServlet implements IndexService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IndexServiceImpl.class);
 
-    public void process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public String process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("type");
         LOGGER.info("文档编辑收到请求  action=" + action);
         if (action == null) {
-            request.getRequestDispatcher("index.jsp").forward(request, response);
-            return;
+//            request.getRequestDispatcher("index").forward(request, response);
+            return "index";
         }
 
         DocumentManager.init(request, response);
@@ -64,6 +64,8 @@ public class IndexServiceImpl extends HttpServlet implements IndexService {
                 track(request, writer);
                 break;
         }
+
+        return null;
     }
 
     private static void upload(HttpServletRequest request, HttpServletResponse response, PrintWriter writer) {
