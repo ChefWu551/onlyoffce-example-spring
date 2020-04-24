@@ -4,7 +4,7 @@ import com.example.onlineEditorFront.helper.DocumentManager;
 import com.example.onlineEditorFront.helper.FileUtility;
 import com.example.onlineEditorFront.helper.ServiceConverter;
 import com.example.onlineEditorFront.service.IndexService;
-import com.example.onlineEditorFront.utils.UserUtil;
+import com.example.onlineEditorFront.utils.UserUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -45,8 +46,8 @@ public class IndexServiceImpl extends HttpServlet implements IndexService {
     public String process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String action = request.getParameter("type");
         LOGGER.info("文档编辑收到请求  action=" + action);
+        Assert.hasText(action, "");
         if (action == null) {
-//            request.getRequestDispatcher("index").forward(request, response);
             return "index";
         }
 
@@ -102,6 +103,7 @@ public class IndexServiceImpl extends HttpServlet implements IndexService {
             writer.write("{ \"filename\": \"" + fileName + "\"}");
 
         } catch (IOException | ServletException e) {
+            e.printStackTrace();
             writer.write("{ \"error\": \"" + e.getMessage() + "\"}");
         }
     }
@@ -200,8 +202,8 @@ public class IndexServiceImpl extends HttpServlet implements IndexService {
         int saved = 0;
         // MustSave, Corrupted
         if (status == 2 || status == 3) {
-            UserUtil userUtil = new UserUtil();
-            String accessToken = userUtil.getAccessToken(request);
+            UserUtils userUtils = new UserUtils();
+            String accessToken = userUtils.getAccessToken(request);
 
             if (accessToken == null || accessToken.length() == 0) {
                 writer.write("缺少token");

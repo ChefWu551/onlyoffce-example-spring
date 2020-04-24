@@ -4,7 +4,7 @@ import lombok.Data;
 
 /**
  * @program: OnlineEditors
- * @description:
+ * @description: user对象
  * @author: wuyuefeng
  * @email: 565948592@qq.com
  * @create: 2019-04-22 14:28

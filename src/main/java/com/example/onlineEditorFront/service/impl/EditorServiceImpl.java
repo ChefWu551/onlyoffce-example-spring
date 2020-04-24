@@ -1,13 +1,9 @@
 package com.example.onlineEditorFront.service.impl;
 
 import com.example.onlineEditorFront.config.OnlyOfficeConfig;
-import com.example.onlineEditorFront.model.FileModel;
+import com.example.onlineEditorFront.model.*;
 import com.example.onlineEditorFront.helper.DocumentManager;
-import com.example.onlineEditorFront.model.CommonResult;
-import com.example.onlineEditorFront.model.UserInfo;
 import com.example.onlineEditorFront.service.EditorService;
-import com.example.onlineEditorFront.utils.UserInfoUtils;
-import com.example.onlineEditorFront.utils.UserUtil;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -21,9 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.*;
 import java.io.*;
 import java.net.URLDecoder;
 import java.util.regex.Matcher;
@@ -38,22 +32,8 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EditorServiceImpl.class);
 
-    private static final Integer INVALID_USER_ID = -1;
-
     public String process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String accessToken = "12973ad1b7a5d39f2b8809b22d29e39d";
-        UserUtil userUtil = new UserUtil();
-
-        // 获取token
-//        String accessToken = userUtil.getAccessToken(request);
-        if (accessToken == null || accessToken.length() == 0) {
-            commonResultReturn(request, response, "缺少token");
-            return "error";
-        }
-
-        // 根据token, 获取用户userId和名称
-        Integer userId = getUserId(accessToken, request, response);
-        UserInfo userInfo = getUserInfo(userId, accessToken);
 
         DocumentManager.init(request, response);
 
@@ -88,7 +68,6 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
                 }
 
                 fileOriginName = URLDecoder.decode(fileHeader.getValue(), "UTF-8");
-//                fileRealName =  fileRealNameHeader.getValue().split("\\\\")[1];
                 String[] fileRealNameDir =  fileRealNameHeader.getValue().split(Matcher.quoteReplacement(File.separator));
                 fileRealName = fileRealNameDir[fileRealNameDir.length-1];
                 LOGGER.info("fileId = {} 要下载文件名 = {}  实际存储名 = {} ", fileId, fileOriginName, fileRealName);
@@ -110,7 +89,8 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
             return "error";
         }
 
-        FileModel fileModel = new FileModel(fileRealName, fileId, accessToken, fileOriginName, userId, userInfo);
+        // todo: response对象添加进来
+        FileModel fileModel = new FileModel(fileRealName, fileId, accessToken, fileOriginName, 888, new UserInfo());
 
         fileModel = modelSelect(fileModel, request);
 
@@ -134,18 +114,6 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
     @Override
     public String getServletInfo() {
         return "Editor page";
-    }
-
-    // 根据token获取userId
-    private Integer getUserId(String accessToken, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        CommonResult<UserInfo> userIdResult = UserInfoUtils.getUserIdfoByToken(accessToken);
-        if (userIdResult.isSuccess() || userIdResult.getData() != null) {
-            return userIdResult.getData().getUserId();
-        } else {
-//            todo: 加入认证
-//            commonResultReturn(request, response, "token认证失败，解析错误。");
-            return 11;
-        }
     }
 
     // 根据userId和Token获取用户信息
@@ -180,6 +148,7 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
             HttpEntity entity = downLoadResponse.getEntity();
             File dest = new File(DocumentManager.storagePath(fileRealName));
             OutputStream output = new FileOutputStream(dest);
+
             int len = 0;
             byte[] ch = new byte[1024];
             try (InputStream input = entity.getContent()) {
