@@ -40,9 +40,8 @@ public class FileModel {
     public String documentType;
     public Document document;
     public EditorConfig editorConfig;
-    public String token;
 
-    public FileModel(String fileName, String fileId, String accessToken, String fileOriginName, Integer userId, UserInfo userInfo) {
+    public FileModel(String fileName, String fileId, String accessToken, String fileOriginName, Integer userId, String userName, String model) {
         if (fileName == null) fileName = "";
         fileName = fileName.trim();
         // 设置当前用户的信息
@@ -61,9 +60,11 @@ public class FileModel {
 
         editorConfig.callbackUrl = DocumentManager.getCallback(fileId, accessToken);
         editorConfig.user.id = String.valueOf(userId);
-        editorConfig.user.name = userInfo.getName();
+        editorConfig.user.name = userName;
         editorConfig.customization.customer.logo = DocumentManager.getServerUrl() + "/css/img/logo.jpg";
         editorConfig.customization.logo.image = DocumentManager.getServerUrl() + "/css/img/logo.jpg";
+
+        modelSelect(model);
     }
 
     public void InitDesktop() {
@@ -71,14 +72,18 @@ public class FileModel {
         editorConfig.InitDesktop(document.url);
     }
 
-    public void BuildToken() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("type", type);
-        map.put("documentType", documentType);
-        map.put("document", document);
-        map.put("editorConfig", editorConfig);
-
-        token = DocumentManager.createToken(map);
+    // 选择file打开模式
+    private void modelSelect(String model) {
+        switch (model) {
+            case "embedded":
+                this.InitDesktop();
+                break;
+            case "view":
+                this.editorConfig.mode = "view";
+                this.document.permissions.edit = false;
+                this.document.permissions.review = false;
+                break;
+        }
     }
 
     public class Document {

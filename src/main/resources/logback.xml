@@ -9,9 +9,9 @@
     </appender>
     <!--输出到文件-->
     <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>./log/object-service.log</file>
+        <file>./log/oo.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>./log/object-service.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>./log/oo.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>

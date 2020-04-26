@@ -3,6 +3,8 @@ package com.example.onlineEditorFront.utils;
 import com.example.onlineEditorFront.model.CommonResult;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -14,7 +16,7 @@ public class ErrorResult {
 
     private static CommonResult commonResult = new CommonResult();
 
-    public static void commonResultReturn(HttpServletRequest request, HttpServletResponse response, String errorMes) throws ServletException, IOException{
+    public static void commonResultReturn(ServletRequest request, ServletResponse response, String errorMes) throws ServletException, IOException{
         commonResult.setErrorMsg(errorMes);
         request.setAttribute("result", commonResult);
         request.getRequestDispatcher("error").forward(request, response);

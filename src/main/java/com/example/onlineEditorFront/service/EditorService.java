@@ -6,5 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public interface EditorService {
+
     String process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException;
+
 }

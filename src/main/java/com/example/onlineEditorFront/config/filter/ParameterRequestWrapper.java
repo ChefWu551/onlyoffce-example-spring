@@ -9,7 +9,7 @@ import java.util.Map;
 /**
 * @author wuyuefeng
 * @brief
-* @email wuyuefeng@thundersdata.com
+* @email 565948592@qq.com
 * @date 2020-04-24
 */
 public class ParameterRequestWrapper extends HttpServletRequestWrapper {

@@ -2,7 +2,7 @@ package com.example.onlineEditorFront.model;
 
 
 import com.alibaba.fastjson.JSONObject;
-import com.example.onlineEditorFront.enums.CommonEnum;
+import com.example.onlineEditorFront.enums.ResponseEnum;
 import com.example.onlineEditorFront.service.BaseErrorInfoInterface;
 
 public class ResultBody {
@@ -69,8 +69,8 @@ public class ResultBody {
      */
     public static ResultBody success(Object data) {
         ResultBody rb = new ResultBody();
-        rb.setCode(CommonEnum.SUCCESS.getResultCode());
-        rb.setMessage(CommonEnum.SUCCESS.getResultMsg());
+        rb.setCode(ResponseEnum.SUCCESS.getResultCode());
+        rb.setMessage(ResponseEnum.SUCCESS.getResultMsg());
         rb.setResult(data);
         return rb;
     }

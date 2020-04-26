@@ -7,6 +7,7 @@ import com.example.onlineEditorFront.service.EditorService;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -15,14 +16,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 import java.io.*;
 import java.net.URLDecoder;
 import java.util.regex.Matcher;
-
-import static com.example.onlineEditorFront.utils.ErrorResult.commonResultReturn;
 
 @Service
 public class EditorServiceImpl extends HttpServlet implements EditorService {
@@ -32,82 +33,55 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EditorServiceImpl.class);
 
-    public String process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String accessToken = "12973ad1b7a5d39f2b8809b22d29e39d";
+    public String process(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         DocumentManager.init(request, response);
 
         String fileId = request.getParameter("fileId");
-        if (fileId == null) {
-            commonResultReturn(request, response, "缺少必要的参数：fieldId");
-            return "error";
-        }
+        String model = request.getParameter("mode");
+        Assert.isTrue(!(ObjectUtils.isEmpty(fileId) || ObjectUtils.isEmpty(model)), "缺少必要的参数: fileId 或 model");
+
+        String accessToken = request.getParameter("accessToken");
+        Integer userId = Integer.valueOf(request.getParameter("userId"));
+        String userName = request.getParameter("userName");
 
         String uri = fileServiceDownloadUrl + fileId + "&access_token=" + accessToken;
-        String fileRealName;
-        String fileOriginName;
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpResponse downLoadResponse = getHttpResponse(httpClient, uri);
-            if (downLoadResponse == null) {
-                commonResultReturn(request, response, "请求文件内容失败");
-                return "error";
-            }
 
-            // 响应码
-            int statusCode = downLoadResponse.getStatusLine().getStatusCode();
-            LOGGER.info("下载文件 fileId = {}, access_token = {} ", fileId, accessToken);
-            // 请求成功
-            if (statusCode == 200) {
-                // 获取文件上传时的文件名
-                Header fileHeader = downLoadResponse.getFirstHeader("downloadFileName");
-                // 获取文件实际存储的文件名，要进行uri转码
-                Header fileRealNameHeader = downLoadResponse.getFirstHeader("downloadFileRealName");
-                if (fileHeader == null || fileRealNameHeader == null) {
-                    commonResultReturn(request, response, "调用文件服务，获取文件名称失败。");
-                    return "error";
-                }
+        HttpResponse downLoadResponse = getHttpResponse(uri);
+        Assert.notNull(downLoadResponse, "请求文件服务失败");
 
-                fileOriginName = URLDecoder.decode(fileHeader.getValue(), "UTF-8");
-                String[] fileRealNameDir =  fileRealNameHeader.getValue().split(Matcher.quoteReplacement(File.separator));
-                fileRealName = fileRealNameDir[fileRealNameDir.length-1];
-                LOGGER.info("fileId = {} 要下载文件名 = {}  实际存储名 = {} ", fileId, fileOriginName, fileRealName);
+        // 响应码
+        Assert.isTrue(downLoadResponse.getStatusLine().getStatusCode() == 200, "请求文件服务失败");
+        LOGGER.info("下载文件 fileId = {}, access_token = {} ", fileId, accessToken);
 
-                // 如果要查看的文件在本地存在，则不需要再去文件服务器下载了
-                try {
-                    getLocalFile(fileRealName, downLoadResponse);
-                } catch (Exception e) {
-                    commonResultReturn(request, response, "加载本地文件时候出现错误。");
-                    response.getWriter().write("Error: " + e.getMessage());
-                }
-            } else {
-                commonResultReturn(request, response, "调用文件失败，请检查。");
-                return "error";
-            }
-        } catch (Exception e) {
-            LOGGER.error("接入文件服务失败", e);
-            commonResultReturn(request, response, "获取要查看的文件失败");
-            return "error";
-        }
+        // 获取文件实际名称和上传时的文件名
+        Header fileHeader = downLoadResponse.getFirstHeader("downloadFileName");
+        Header fileRealNameHeader = downLoadResponse.getFirstHeader("downloadFileRealName");
 
-        // todo: response对象添加进来
-        FileModel fileModel = new FileModel(fileRealName, fileId, accessToken, fileOriginName, 888, new UserInfo());
+        String fileOriginName = URLDecoder.decode(fileHeader.getValue(), "UTF-8");
+        String[] fileRealNameDir = fileRealNameHeader.getValue().split(Matcher.quoteReplacement(File.separator));
+        String fileRealName = fileRealNameDir[fileRealNameDir.length - 1];
+        LOGGER.info("fileId = {} 要下载文件名 = {}  实际存储名 = {} ", fileId, fileOriginName, fileRealName);
 
-        fileModel = modelSelect(fileModel, request);
+        // 如果要查看的文件在本地存在，则不需要再去文件服务器下载了
+        getLocalFile(fileRealName, downLoadResponse);
 
+        FileModel fileModel = new FileModel(fileRealName, fileId, accessToken, fileOriginName, userId, userName, model);
         LOGGER.info("fileModel 构建结果为 = " + FileModel.Serialize(fileModel));
 
         request.setAttribute("file", fileModel);
         request.setAttribute("docserviceApiUrl", OnlyOfficeConfig.fileDocServiceUrlApi);
+
         return "editor";
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         process(request, response);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         process(request, response);
     }
 
@@ -116,15 +90,9 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
         return "Editor page";
     }
 
-    // 根据userId和Token获取用户信息
-    private UserInfo getUserInfo(Integer userId, String accessToken) {
-        UserInfo userInfo = new UserInfo();
-        userInfo.setName("testUser");
-        return userInfo;
-    }
-
     // 获取请求文件结果
-    private HttpResponse getHttpResponse(CloseableHttpClient httpClient, String uri) {
+    private HttpResponse getHttpResponse(String uri) {
+        CloseableHttpClient httpClient = HttpClients.createDefault();
         try {
             RequestConfig timeoutConfig = RequestConfig.custom()
                     .setConnectTimeout(5000).setConnectionRequestTimeout(1000)
@@ -149,34 +117,17 @@ public class EditorServiceImpl extends HttpServlet implements EditorService {
             File dest = new File(DocumentManager.storagePath(fileRealName));
             OutputStream output = new FileOutputStream(dest);
 
-            int len = 0;
+            int len;
             byte[] ch = new byte[1024];
             try (InputStream input = entity.getContent()) {
                 while ((len = input.read(ch)) != -1) {
                     output.write(ch, 0, len);
                 }
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    // 选择file打开模式
-    private FileModel modelSelect(FileModel fileModel, HttpServletRequest request) {
-        if ("embedded".equals(request.getParameter("mode"))) {
-            fileModel.InitDesktop();
-        }
-
-        if ("view".equals(request.getParameter("mode"))) {
-            fileModel.editorConfig.mode = "view";
-            fileModel.document.permissions.edit = false;
-            fileModel.document.permissions.review = false;
-        }
-
-        if (DocumentManager.tokenEnabled()) {
-            fileModel.BuildToken();
-        }
-
-        return fileModel;
-    }
 }
